@@ -13,8 +13,8 @@ def create_graph(bbox):
 	G = ox.graph_from_bbox(
 		north, south, east, west, 
 		network_type='walk', # "all_private", "all", "bike", "drive", "drive_service", "walk"
-		simplify=False, 
-		retain_all=False, 
+		simplify=True, 
+		retain_all=True, 
 		truncate_by_edge=False, 
 		clean_periphery=True, 
 		custom_filter=None)
