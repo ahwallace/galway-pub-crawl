@@ -22,7 +22,7 @@ class pub_crawl:
         self.optimal_distance = None
 
         self.pub_nodes = self.create_pub_nodes()
-        self.distance_matrix = self.create_distance_matrix()
+        # self.distance_matrix = self.create_distance_matrix()
     
     def create_pub_nodes(self):
         # Dictionary of pub names and coordinates
@@ -42,12 +42,12 @@ class pub_crawl:
         route_length_total = sum(route_lengths)
         return route_length_total
 
-    def create_distance_matrix(self):
+    def create_distance_matrix(self, pubs_considered):
         distance_matrix = []
-        for i in range(len(self.pub_names)):
+        for i in range(len(pubs_considered)):
             row = []
-            for j in range(len(self.pub_names)):
-                distance = self.get_route_length(self.pub_names[i], self.pub_names[j])
+            for j in range(len(pubs_considered)):
+                distance = self.get_route_length(pubs_considered[i], pubs_considered[j])
                 row.append(round(distance*1000)) # avoids rounding error in Google's OR-Tools package
             distance_matrix.append(row)
         
@@ -73,7 +73,8 @@ class pub_crawl:
     
     def plot_route(self, route):
         route_nodes = self.get_route_nodes(route)
-        fig, ax = ox.plot_graph_routes(self.G, route_nodes, bgcolor='#FFFFFF', show=False, close=False)
+        fig, ax = ox.plot_graph_routes(self.G, route_nodes, bgcolor='#FFFFFF', show=False, close=False, 
+        figsize=(12, 12))
         for _, node in ox.graph_to_gdfs(self.G, nodes=True, edges=False).fillna("").iterrows():
             for i, k in enumerate(route):
                 if node.name == self.pub_nodes[k]:
@@ -82,15 +83,15 @@ class pub_crawl:
         plt.show()
         return fig
     
-    def create_data(self, start):
+    def create_data(self, start, pubs_considered):
         data = {}
-        start_index = self.pub_names.index(start)
-        data['distance_matrix'] = self.distance_matrix
+        start_index = pubs_considered.index(start)
+        data['distance_matrix'] = self.create_distance_matrix(pubs_considered)
         data['num_vehicles'] = 1
         data['depot'] = start_index
         return data
     
-    def format_solution(self, manager, routing, solution):
+    def format_solution(self, manager, routing, solution, pubs_considered):
         """Formats solution for osmnx plotting"""
         index = routing.Start(0)
         route = [index]
@@ -107,10 +108,10 @@ class pub_crawl:
             leg_distances.append(leg_distance)
             route_distance += leg_distance
         
-        self.optimal_route = [self.pub_names[i] for i in route]
-        self.optimal_distance = route_distance/1000
+        self.optimal_route = [pubs_considered[i] for i in route]
+        self.optimal_distance = round(route_distance/1000)
     
-    def optimise(self, start_point):
+    def optimise(self, start_point, pubs_considered):
 
         def distance_callback(from_index, to_index):
             """Returns the distance between the two nodes."""
@@ -119,7 +120,7 @@ class pub_crawl:
             to_node = manager.IndexToNode(to_index)
             return data['distance_matrix'][from_node][to_node]
         
-        data = self.create_data(start_point)
+        data = self.create_data(start_point, pubs_considered)
 
         # Create the routing index manager
         manager = pywrapcp.RoutingIndexManager(len(data['distance_matrix']),
@@ -145,7 +146,7 @@ class pub_crawl:
 
         # Format solution
         if solution:
-            self.format_solution(manager, routing, solution)
+            self.format_solution(manager, routing, solution, pubs_considered)
 
 if __name__=='main':
     df = pd.read_csv('galway_pubs.csv')
@@ -162,7 +163,7 @@ if __name__=='main':
     crawler.plot_route(initial_route)
 
     start_pub = 'The Sliding Rock'
-    crawler.optimise(start_pub)
+    crawler.optimise(start_pub, ['The Sliding Rock', 'The Salt House', 'Caribou'])
 
     optimal_route = crawler.optimal_route
     print('Optimised route:')
