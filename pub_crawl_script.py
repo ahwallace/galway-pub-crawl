@@ -22,7 +22,6 @@ class pub_crawl:
         self.optimal_distance = None
 
         self.pub_nodes = self.create_pub_nodes()
-        # self.distance_matrix = self.create_distance_matrix()
     
     def create_pub_nodes(self):
         # Dictionary of pub names and coordinates
@@ -80,7 +79,7 @@ class pub_crawl:
                 if node.name == self.pub_nodes[k]:
                     c = node["geometry"].centroid
                     ax.annotate(f'{i}: {k}', xy=(c.x, c.y), xycoords='data', xytext=(3, -2), textcoords='offset points', size=8)
-        plt.show()
+        
         return fig
     
     def create_data(self, start, pubs_considered):
